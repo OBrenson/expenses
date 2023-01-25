@@ -2,7 +2,7 @@ CREATE SCHEMA IF NOT EXISTS expenses;
 
 create table if not exists expenses.user (
     id serial primary key,
-    username varchar (50),
+    username varchar (50) unique,
     is_admin boolean
 );
 
