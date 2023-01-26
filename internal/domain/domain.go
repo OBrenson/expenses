@@ -3,14 +3,15 @@ package domain
 import "time"
 
 type User struct {
-	Id int `json:"column:id" xorm:"serial pk"`
-	Username string `json:"column:username"`
-	IsAdmin bool `json:"column:is_admin"`
+	Id int `gorm:"primaryKey column:id"`
+	Username string `gorm:"column:username;unique"`
+	IsAdmin bool `gorm:"column:is_admin"`
 }
 
 type Data struct {
-	User User `xorm:"extends"`
-	Sum float64 `json:"column:sum"`
-	Type string `json:"column:expense_type"`
-	Date time.Time `json:"column:expense_date"`
+	UserId int `gorm:"column:user_id"`
+	User *User `gorm:"foreignKey:UserId;references:Id"`
+	Sum float64 `gorm:"column:sum"`
+	Type string `gorm:"column:expense_type"`
+	Date time.Time `gorm:"column:expense_date"`
 }

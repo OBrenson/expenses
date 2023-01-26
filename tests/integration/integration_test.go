@@ -2,60 +2,54 @@ package integration
 
 import (
 	"expenses/internal/domain"
-	"fmt"
 	"testing"
+	"time"
 
-	"github.com/go-xorm/xorm"
-	_ "github.com/lib/pq"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
 func TestGorm(t *testing.T) {
-  	ds := "postgres://myusername:mypassword@localhost:5432/postgres?sslmode=disable"
-	db, err := xorm.NewEngine("postgres", ds)
+	dsn := "host=localhost user=myusername password=mypassword dbname=postgres port=5432 sslmode=disable"
+	db, err := gorm.Open(
+		postgres.Open(dsn),
+		&gorm.Config{
+			NamingStrategy: schema.NamingStrategy{
+				TablePrefix:   "expenses.",
+				SingularTable: true,
+			}})
 	if err != nil {
 		panic(err)
 	}
-
-  	if err != nil {
-    	panic("failed to connect database")
-  	}
-	db.SetSchema("expenses")
   
 	u := domain.User{Username: "test1", IsAdmin: false}
-	_,err = db.Insert(u)
+	res := db.Create(&u)
+	checkOperation(&res.RowsAffected, res.Error, "Create user")
+
+	user := domain.User{Username: "test1"}
+	res = db.First(&user)
+	checkOperation(&res.RowsAffected, res.Error, "Find user")
+
+	res = db.Model(&user).Update("username", "test2")
+	checkOperation(&res.RowsAffected, res.Error, "Update user")
+
+	d := domain.Data{User: &user, Sum: 100, Type: "shop", Date: time.Now()}
+	res = db.Create(&d);
+	checkOperation(&res.RowsAffected, res.Error, "Insert data")
+
+	res = db.Where("user_id = ?", d.UserId).Delete(&d)
+	checkOperation(&res.RowsAffected, res.Error, "Delete data")
+
+	res = db.Delete(&user, user.Id)
+	checkOperation(&res.RowsAffected, res.Error, "Delete user")
+}
+
+func checkOperation(af *int64, err error, op string) {
 	if err != nil {
-    	panic("failed to insert" + err.Error())
+    	panic("err in delete " + err.Error())
   	}
-
-	res := domain.User{Username: "test1"}
-	ok,err := db.Get(&res)
-
-	if err != nil {
-    	panic("err in get" + err.Error())
-  	}
-
-	if !ok {
-		panic("did not find user")
+	if af != nil && *af == 0 {
+		panic("did not " + op)
 	}
-
-	fmt.Println(res.Id)
-
-	res.Username = "test2"
-	af,err := db.ID(res.Id).Update(res)
-	if err != nil {
-    	panic("err in update" + err.Error())
-  	}
-	if af == 0 {
-		panic("did not update")
-	}
-
-	af,err = db.Delete(res)
-
-	if err != nil {
-    	panic("err in delete" + err.Error())
-  	}
-	if af == 0 {
-		panic("did not delete")
-	}
-
 }
