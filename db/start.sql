@@ -1,4 +1,10 @@
-CREATE SCHEMA IF NOT EXISTS expenses;
+CREATE USER myusername WITH PASSWORD 'mypassword';
+
+CREATE SCHEMA IF NOT EXISTS expenses AUTHORIZATION myusername;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA expenses GRANT ALL PRIVILEGES ON TABLES TO myusername;
+ALTER DEFAULT PRIVILEGES IN SCHEMA expenses GRANT USAGE ON SEQUENCES TO myusername;
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA expenses TO myusername;
 
 create table if not exists expenses.user (
     id serial primary key,
@@ -7,8 +13,8 @@ create table if not exists expenses.user (
 );
 
 create table if not exists expenses.data (
-    user_id integer references expenses.user,
-    sum money,
+    user_id integer references expenses.user not null,
+    sum float8,
     expense_type varchar(50),
     expense_date timestamp
 );

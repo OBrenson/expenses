@@ -1,0 +1,1 @@
+INSERT INTO expenses.user (username, is_admin) VALUES ('ol', false);
