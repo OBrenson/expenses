@@ -20,14 +20,15 @@ type DbApi interface {
 }
 
 type DbService struct {
-	gorm.DB
+
 }
 
 type DaoService[T domain.Data | domain.User] struct {
-	db *DbService
+	db *gorm.DB
+	dbService DbApi
 }
 
-func CreateDb(dsn string, schemaName string) (db DbApi) {
+func CreateDb(dsn string, schemaName string) (*gorm.DB) {
 	gdb, err := gorm.Open(
 		postgres.Open(dsn),
 		&gorm.Config{
@@ -38,12 +39,11 @@ func CreateDb(dsn string, schemaName string) (db DbApi) {
 	if err != nil {
 		panic(err)
 	}
-	return &DbService{*gdb}
+	return gdb
 }
 
-func CreateDao[T domain.Data | domain.User](db DbApi) DaoApi[T] {
-	s,_ := db.(*DbService)
-	return &DaoService[T]{db: s}
+func CreateDao[T domain.Data | domain.User](dbApi DbApi, db *gorm.DB) DaoApi[T] {
+	return &DaoService[T]{dbService: dbApi, db: db}
 }
 
 func (db *DbService) Query(dbFunc func (args interface{}) *gorm.DB, args interface{}) *gorm.DB {
@@ -51,8 +51,9 @@ func (db *DbService) Query(dbFunc func (args interface{}) *gorm.DB, args interfa
 }
 
 func (ds *DaoService[T]) Insert(val *T) (*T, error) {
-	ds.db.Query(ds.db.Create, val)
-	return nil, nil
+	f := ds.db.Create
+	ds.dbService.Query(f, val)
+	return nil,nil
 }
 
 func (ds *DaoService[T]) GetByField(field string, val interface{}) (*T, error) {
