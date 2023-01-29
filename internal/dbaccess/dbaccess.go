@@ -16,7 +16,7 @@ type DaoApi[T domain.Data | domain.User] interface {
 }
 
 type DbApi interface {
-	Query(func (args... interface{}) *gorm.DB) *gorm.DB
+	Query(dbFunc func (args interface{}) *gorm.DB, args interface{}) *gorm.DB
 }
 
 type DbService struct {
@@ -42,15 +42,16 @@ func CreateDb(dsn string, schemaName string) (db DbApi) {
 }
 
 func CreateDao[T domain.Data | domain.User](db DbApi) DaoApi[T] {
-	db.(DbService)
-	return &DaoService[T]{db: db.(DbService)}
+	s,_ := db.(*DbService)
+	return &DaoService[T]{db: s}
 }
 
-func (db *DbService) Query(func(args... interface{}) *gorm.DB) *gorm.DB {
-	
+func (db *DbService) Query(dbFunc func (args interface{}) *gorm.DB, args interface{}) *gorm.DB {
+	return nil
 }
 
 func (ds *DaoService[T]) Insert(val *T) (*T, error) {
+	ds.db.Query(ds.db.Create, val)
 	return nil, nil
 }
 
