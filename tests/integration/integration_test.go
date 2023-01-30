@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"expenses/internal/dbaccess"
 	"expenses/internal/domain"
 	"testing"
 	"time"
@@ -10,8 +11,12 @@ import (
 	"gorm.io/gorm/schema"
 )
 
+const (
+	dsn = "host=localhost user=myusername password=mypassword dbname=postgres port=5432 sslmode=disable"
+)
+var user = &domain.User{Username: "test1", IsAdmin: false}
+
 func TestGorm(t *testing.T) {
-	dsn := "host=localhost user=myusername password=mypassword dbname=postgres port=5432 sslmode=disable"
 	db, err := gorm.Open(
 		postgres.Open(dsn),
 		&gorm.Config{
@@ -22,9 +27,9 @@ func TestGorm(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-  
-	//u := domain.User{Username: "test1", IsAdmin: false}
-	res := db.Create(nil)
+
+	u := &domain.User{Username: "test1", IsAdmin: false}
+	res := db.Create(u)
 	checkOperation(&res.RowsAffected, res.Error, "Create user")
 
 	user := domain.User{Username: "test1"}
@@ -35,7 +40,7 @@ func TestGorm(t *testing.T) {
 	checkOperation(&res.RowsAffected, res.Error, "Update user")
 
 	d := domain.Data{User: &user, Sum: 100, Type: "shop", Date: time.Now()}
-	res = db.Create(&d);
+	res = db.Create(&d)
 	checkOperation(&res.RowsAffected, res.Error, "Insert data")
 
 	res = db.Where("user_id = ?", d.UserId).Delete(&d)
@@ -45,10 +50,26 @@ func TestGorm(t *testing.T) {
 	checkOperation(&res.RowsAffected, res.Error, "Delete user")
 }
 
+func TestInsert(t *testing.T) {
+	db := dbaccess.CreateDb(dsn, "expenses")
+	uDao := dbaccess.CreateDao[domain.User](&dbaccess.DbService{} ,db)
+	err := uDao.Insert(user)
+	if err != nil {
+		panic(err)
+	}
+	if user.Id == nil {
+		panic("Id field can not be nil after insert.")
+	}
+}
+
+func TestDelete(t *testing.T) {
+
+}
+
 func checkOperation(af *int64, err error, op string) {
 	if err != nil {
-    	panic("err in delete " + err.Error())
-  	}
+		panic("err in delete " + err.Error())
+	}
 	if af != nil && *af == 0 {
 		panic("did not " + op)
 	}

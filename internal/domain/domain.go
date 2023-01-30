@@ -3,7 +3,7 @@ package domain
 import "time"
 
 type User struct {
-	Id int `gorm:"primaryKey column:id"`
+	Id *int `gorm:"primaryKey column:id"`
 	Username string `gorm:"column:username;unique"`
 	IsAdmin bool `gorm:"column:is_admin"`
 }
