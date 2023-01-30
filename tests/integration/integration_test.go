@@ -23,8 +23,8 @@ func TestGorm(t *testing.T) {
 		panic(err)
 	}
   
-	u := domain.User{Username: "test1", IsAdmin: false}
-	res := db.Create(&u)
+	//u := domain.User{Username: "test1", IsAdmin: false}
+	res := db.Create(nil)
 	checkOperation(&res.RowsAffected, res.Error, "Create user")
 
 	user := domain.User{Username: "test1"}
