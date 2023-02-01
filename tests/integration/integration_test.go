@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"expenses/internal/commands"
 	"expenses/internal/dbaccess"
 	"expenses/internal/domain"
 	"testing"
@@ -61,6 +62,11 @@ func TestDao(t *testing.T) {
 	testGet(t, dao)
 	testUpdate(t, dao)
 	testDelete(t, dao)
+
+	a := commands.Add{
+		Action: commands.Action { 
+			Next: commands.Delete{}}}
+	a.GetType()
 }
 
 func testGet(t *testing.T, dao dbaccess.DaoApi) {
