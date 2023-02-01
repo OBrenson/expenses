@@ -15,3 +15,15 @@ type Data struct {
 	Type string `gorm:"column:expense_type"`
 	Date time.Time `gorm:"column:expense_date"`
 }
+
+type Entity interface {
+	ToString() string
+}
+
+func (u User) ToString() string {
+	return "User"
+}
+
+func (d Data) ToString() string {
+	return "Data"
+}

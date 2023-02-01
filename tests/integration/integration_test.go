@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -30,47 +31,64 @@ func TestGorm(t *testing.T) {
 
 	u := &domain.User{Username: "test1", IsAdmin: false}
 	res := db.Create(u)
-	checkOperation(&res.RowsAffected, res.Error, "Create user")
+	checkOperation(t, &res.RowsAffected, res.Error, "Create user")
+
+	res = db.Where("username = ?", "test1").Find(&u)
+	checkOperation(t, &res.RowsAffected, res.Error, "Where user")
 
 	user := domain.User{Username: "test1"}
 	res = db.First(&user)
-	checkOperation(&res.RowsAffected, res.Error, "Find user")
+	checkOperation(t, &res.RowsAffected, res.Error, "Find user")
 
 	res = db.Model(&user).Update("username", "test2")
-	checkOperation(&res.RowsAffected, res.Error, "Update user")
+	checkOperation(t, &res.RowsAffected, res.Error, "Update user")
 
 	d := domain.Data{User: &user, Sum: 100, Type: "shop", Date: time.Now()}
 	res = db.Create(&d)
-	checkOperation(&res.RowsAffected, res.Error, "Insert data")
+	checkOperation(t, &res.RowsAffected, res.Error, "Insert data")
 
 	res = db.Where("user_id = ?", d.UserId).Delete(&d)
-	checkOperation(&res.RowsAffected, res.Error, "Delete data")
+	checkOperation(t, &res.RowsAffected, res.Error, "Delete data")
 
 	res = db.Delete(&user, user.Id)
-	checkOperation(&res.RowsAffected, res.Error, "Delete user")
+	checkOperation(t, &res.RowsAffected, res.Error, "Delete user")
 }
 
-func TestInsert(t *testing.T) {
+func TestDao(t *testing.T) {
 	db := dbaccess.CreateDb(dsn, "expenses")
-	uDao := dbaccess.CreateDao[domain.User](&dbaccess.DbService{} ,db)
-	err := uDao.Insert(user)
-	if err != nil {
-		panic(err)
-	}
-	if user.Id == nil {
-		panic("Id field can not be nil after insert.")
-	}
+	dao := dbaccess.CreateDao(db)
+	testInsert(t, dao)
+	testGet(t, dao)
+	testUpdate(t, dao)
+	testDelete(t, dao)
 }
 
-func TestDelete(t *testing.T) {
-
+func testGet(t *testing.T, dao dbaccess.DaoApi) {
+	err := dao.GetByField(user, "username", user.Username)
+	checkOperation(t, nil, err, "Get " + user.ToString())
 }
 
-func checkOperation(af *int64, err error, op string) {
+func testInsert(t *testing.T, dao dbaccess.DaoApi) {
+	err := dao.Insert(user)
+	checkOperation(t, nil, err, "Insert " + user.ToString())
+}
+
+func testUpdate(t *testing.T, dao dbaccess.DaoApi) {
+	err := dao.UpdateField(user, "username", "testUpdated")
+	checkOperation(t, nil, err, "Update" + user.ToString())
+	assert.Equal(t, "testUpdated", user.Username)
+}
+
+func testDelete(t *testing.T, dao dbaccess.DaoApi) {
+	err := dao.DeleteByField(user, "id", user.Id)
+	checkOperation(t, nil, err, "Delete " + user.ToString())
+}
+
+func checkOperation(t *testing.T, af *int64, err error, op string) {
 	if err != nil {
-		panic("err in delete " + err.Error())
+		t.Error("err in delete " + err.Error())
 	}
 	if af != nil && *af == 0 {
-		panic("did not " + op)
+		t.Error("did not " + op)
 	}
 }
